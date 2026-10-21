@@ -16,12 +16,17 @@
     html, body, #map {
       width: 100%;
       height: 100%;
-      background: #0f172a;
+      background: #f8fafc;
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", sans-serif;
     }
     .leaflet-control-zoom, .leaflet-control-attribution {
       display: none !important;
+    }
+
+    /* Modern Dark Theme CSS Filter for Zero-API-Key Dark Map */
+    .dark-map-tiles {
+      filter: invert(100%) hue-rotate(180deg) brightness(88%) contrast(92%);
     }
 
     /* User Pulse Location Marker */
@@ -136,25 +141,24 @@
       bounceAtZoomLimits: true
     });
 
-    // Tile Providers (100% Free)
+    // Tile Providers (100% Free Open-Source, Zero Watermarks, No API Key Required)
     const tileLayers = {
-      light: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19
-      }),
-      dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19
-      }),
       osm: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+      }),
+      satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri &copy; Maxar',
+        maxZoom: 19
+      }),
+      dark: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        className: 'dark-map-tiles',
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19
       })
     };
 
-    let currentLayer = tileLayers.light.addTo(map);
+    let currentLayer = tileLayers.osm.addTo(map);
 
     // Layer Groups
     const poiLayerGroup = L.layerGroup().addTo(map);
@@ -167,12 +171,16 @@
     // Switch Theme
     function setTheme(theme) {
       map.removeLayer(currentLayer);
+      const mapEl = document.getElementById('map');
       if (theme === 'dark') {
         currentLayer = tileLayers.dark.addTo(map);
-      } else if (theme === 'osm') {
-        currentLayer = tileLayers.osm.addTo(map);
+        if (mapEl) mapEl.style.background = '#0f172a';
+      } else if (theme === 'satellite') {
+        currentLayer = tileLayers.satellite.addTo(map);
+        if (mapEl) mapEl.style.background = '#020617';
       } else {
-        currentLayer = tileLayers.light.addTo(map);
+        currentLayer = tileLayers.osm.addTo(map);
+        if (mapEl) mapEl.style.background = '#f8fafc';
       }
     }
 

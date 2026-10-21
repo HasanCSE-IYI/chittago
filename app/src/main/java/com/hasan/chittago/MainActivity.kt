@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
     private var selectedPoi: PlacePOI? = null
     private var currentTravelMode = "driving" // "driving", "bike", "walking"
     private var currentLayerIndex = 0
-    private val layerThemes = listOf("light", "dark", "osm")
+    private val layerThemes = listOf("osm", "satellite", "dark")
 
     // Hardware Sensors
     private var locationManager: LocationManager? = null
@@ -351,15 +351,15 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
         binding.fabDistrictQuick.setOnClickListener { openDistrictSelector() }
         binding.btnDistrictFilter.setOnClickListener { openDistrictSelector() }
 
-        // Layer switcher (Day / Night / OSM)
+        // Layer switcher (Standard OSM / Satellite / Night)
         binding.fabLayers.setOnClickListener {
             currentLayerIndex = (currentLayerIndex + 1) % layerThemes.size
             val nextTheme = layerThemes[currentLayerIndex]
             binding.mapWebView.evaluateJavascript("setTheme('$nextTheme')", null)
             val themeName = when (nextTheme) {
-                "dark" -> "নাইট মোড (Dark)"
-                "osm" -> "ওপেনস্ট্রিটম্যাপ (Standard)"
-                else -> "ডে মোড (Clean Light)"
+                "satellite" -> "স্যাটেলাইট ভিউ (Satellite 🛰️)"
+                "dark" -> "নাইট মোড (Dark 🌙)"
+                else -> "স্ট্রিট ম্যাপ (OpenStreetMap 🗺️)"
             }
             Toast.makeText(this, themeName, Toast.LENGTH_SHORT).show()
         }
