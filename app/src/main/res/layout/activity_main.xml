@@ -222,6 +222,19 @@
             app:fabCustomSize="46dp"
             app:tint="@color/primary" />
 
+        <!-- Emergency Directory SOS FAB -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabEmergency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:contentDescription="Emergency Helpline"
+            android:src="@drawable/ic_emergency"
+            app:backgroundTint="@color/coral"
+            app:elevation="5dp"
+            app:fabCustomSize="46dp"
+            app:tint="@color/surface_white" />
+
         <!-- Map Layer Switcher (Day / Night / OSM) -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabLayers"
@@ -362,6 +375,24 @@
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
             </LinearLayout>
+
+            <!-- Turn-by-Turn Steps Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnViewRouteSteps"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="10dp"
+                android:text="টার্ন-বাই-টার্ন পথনির্দেশনা দেখুন"
+                android:textAllCaps="false"
+                android:textColor="@color/accent_teal"
+                android:textSize="13sp"
+                app:cornerRadius="10dp"
+                app:icon="@drawable/ic_directions"
+                app:iconGravity="textStart"
+                app:iconSize="16dp"
+                app:iconTint="@color/accent_teal"
+                app:strokeColor="@color/accent_teal" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
@@ -496,6 +527,23 @@
                     app:iconGravity="textStart"
                     app:iconTint="@color/emerald"
                     app:strokeColor="@color/emerald" />
+
+                <!-- Share Location Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSharePoi"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="শেয়ার"
+                    android:textAllCaps="false"
+                    android:textColor="@color/accent_teal"
+                    app:cornerRadius="14dp"
+                    app:icon="@drawable/ic_share"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/accent_teal"
+                    app:strokeColor="@color/accent_teal" />
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>

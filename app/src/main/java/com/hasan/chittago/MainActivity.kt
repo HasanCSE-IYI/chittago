@@ -29,12 +29,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.hasan.chittago.data.cache.TileCacheManager
 import com.hasan.chittago.data.model.PlacePOI
+import com.hasan.chittago.data.model.RouteResult
 import com.hasan.chittago.data.network.OsrmRouteService
 import com.hasan.chittago.data.network.PhotonSearchService
 import com.hasan.chittago.data.repository.PoiRepository
 import com.hasan.chittago.databinding.ActivityMainBinding
 import com.hasan.chittago.ui.adapter.SearchSuggestionAdapter
 import com.hasan.chittago.ui.dialog.DistrictSelectorDialog
+import com.hasan.chittago.ui.dialog.EmergencyDirectoryDialog
+import com.hasan.chittago.ui.dialog.RouteStepsDialog
 import com.hasan.chittago.ui.view.MapViewBridge
 import com.hasan.chittago.util.GeoUtils
 import kotlinx.coroutines.Job
@@ -64,6 +67,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
     private var currentTravelMode = "driving" // "driving", "bike", "walking"
     private var currentLayerIndex = 0
     private val layerThemes = listOf("osm", "satellite", "dark")
+    private var currentRouteResult: RouteResult? = null
 
     // Hardware Sensors
     private var locationManager: LocationManager? = null
@@ -256,6 +260,19 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
             binding.btnCallPoi.visibility = View.GONE
         }
 
+        // Share Location Button
+        binding.btnSharePoi.setOnClickListener {
+            try {
+                val shareText = "📍 ${poi.nameBn.ifEmpty { poi.name }}\nঠিকানা: ${poi.address.ifEmpty { poi.district }}\nজেলা: ${poi.district}\nম্যাপ লিঙ্ক: https://www.openstreetmap.org/?mlat=${poi.lat}&mlon=${poi.lng}#map=16/${poi.lat}/${poi.lng}"
+                val sendIntent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_TEXT, shareText)
+                    type = "text/plain"
+                }
+                startActivity(Intent.createChooser(sendIntent, "লোকেশন শেয়ার করুন"))
+            } catch (_: Exception) {}
+        }
+
         binding.btnGetDirections.setOnClickListener {
             startNavigationTo(poi)
         }
@@ -297,8 +314,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
             )
 
             if (route != null) {
+                currentRouteResult = route
                 binding.tvRouteDistance.text = "(${GeoUtils.formatDistance(route.distanceKm)})"
                 binding.tvRouteDuration.text = GeoUtils.formatDuration(route.durationMinutes)
+                binding.btnViewRouteSteps.visibility = if (route.steps.isNotEmpty()) View.VISIBLE else View.GONE
 
                 val routeColor = when (mode) {
                     "walking" -> "#10b981"
@@ -309,6 +328,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
                 val jsCommand = "drawRoute('${route.geojsonCoordinatesJson}', '$routeColor')"
                 binding.mapWebView.evaluateJavascript(jsCommand, null)
             } else {
+                currentRouteResult = null
+                binding.btnViewRouteSteps.visibility = View.GONE
                 Toast.makeText(this@MainActivity, "রুট পাওয়া যায়নি বা অফলাইন মোডে আছেন", Toast.LENGTH_SHORT).show()
             }
         }
@@ -353,6 +374,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
         binding.fabDistrictQuick.setOnClickListener { openDistrictSelector() }
         binding.btnDistrictFilter.setOnClickListener { openDistrictSelector() }
 
+        // Emergency Helpline SOS Button
+        binding.fabEmergency.setOnClickListener {
+            EmergencyDirectoryDialog().show(supportFragmentManager, EmergencyDirectoryDialog.TAG)
+        }
+
         // Layer switcher (Standard OSM / Satellite / Night)
         binding.fabLayers.setOnClickListener {
             currentLayerIndex = (currentLayerIndex + 1) % layerThemes.size
@@ -385,8 +411,16 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
             updateModeSelector("walking")
         }
 
+        // View Turn-by-Turn Steps
+        binding.btnViewRouteSteps.setOnClickListener {
+            val route = currentRouteResult ?: return@setOnClickListener
+            val summary = "দূরত্ব: ${GeoUtils.formatDistance(route.distanceKm)} • সময়: ${GeoUtils.formatDuration(route.durationMinutes)}"
+            RouteStepsDialog(route.steps, summary).show(supportFragmentManager, RouteStepsDialog.TAG)
+        }
+
         // Close route
         binding.btnCloseRoute.setOnClickListener {
+            currentRouteResult = null
             binding.cardRouteInfo.visibility = View.GONE
             binding.mapWebView.evaluateJavascript("clearRoute()", null)
         }
