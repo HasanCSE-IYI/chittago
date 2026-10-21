@@ -11,7 +11,7 @@ import java.net.URL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class TileCacheManager(private val context: Context) {
+class TileCacheManager(context: Context) {
 
     private val cacheDir = File(context.cacheDir, "maptiles").apply {
         if (!exists()) mkdirs()

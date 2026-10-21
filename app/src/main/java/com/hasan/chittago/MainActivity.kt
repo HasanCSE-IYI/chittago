@@ -106,10 +106,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
             settings.useWideViewPort = true
 
             val bridge = MapViewBridge(
-                onMarkerClickCallback = { id, name, lat, lng, category, district ->
+                onMarkerClickCallback = { id, _, lat, lng, _, _ ->
                     runOnUiThread { handleMarkerClick(id, lat, lng) }
                 },
-                onMapMoveCallback = { lat, lng, zoom ->
+                onMapMoveCallback = { _, _, _ ->
                     // Optional tracking callback
                 },
                 onMapReadyCallback = {
@@ -170,7 +170,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
     }
 
     private fun setupSearch() {
-        searchAdapter = SearchSuggestionAdapter(emptyList()) { poi ->
+        searchAdapter = SearchSuggestionAdapter { poi ->
             onPoiSelected(poi)
         }
         binding.rvSuggestions.apply {
@@ -193,7 +193,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
                 val localMatches = poiRepository.searchPois(query)
                 if (localMatches.isNotEmpty()) {
                     binding.cardSuggestions.visibility = View.VISIBLE
-                    searchAdapter.updateList(localMatches)
+                    searchAdapter.submitList(localMatches)
                 }
 
                 // Debounced Online Search via Photon for comprehensive coverage
@@ -205,7 +205,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
                         val combined = (localMatches + onlineResults).distinctBy { "${it.lat},${it.lng}" }
                         if (combined.isNotEmpty()) {
                             binding.cardSuggestions.visibility = View.VISIBLE
-                            searchAdapter.updateList(combined)
+                            searchAdapter.submitList(combined)
                         }
                     }
                 }

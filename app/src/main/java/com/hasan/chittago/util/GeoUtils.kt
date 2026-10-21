@@ -1,5 +1,6 @@
 package com.hasan.chittago.util
 
+import java.util.Locale
 import kotlin.math.*
 
 object GeoUtils {
@@ -31,7 +32,7 @@ object GeoUtils {
         return if (km < 1.0) {
             "${(km * 1000).roundToInt()} মি."
         } else {
-            String.format("%.1f কিমি", km)
+            String.format(Locale.US, "%.1f কিমি", km)
         }
     }
 
