@@ -1,3 +1,15 @@
+pluginManagement {
+    repositories {
+        def localMvn = new File('/root/maven/localMvnRepository')
+        if (localMvn.exists()) {
+            maven { url = uri(localMvn) }
+        }
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
