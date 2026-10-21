@@ -196,6 +196,21 @@
                     android:text="@string/category_emergency"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
+
+                <!-- Weather Chip -->
+                <TextView
+                    android:id="@+id/chipWeather"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_chip_unselected"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:text="🌦️ আবহাওয়া"
+                    android:textColor="@color/accent_teal"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
             </LinearLayout>
         </HorizontalScrollView>
     </LinearLayout>
@@ -221,6 +236,19 @@
             app:elevation="4dp"
             app:fabCustomSize="46dp"
             app:tint="@color/primary" />
+
+        <!-- Live Weather & Mountain Advisory FAB -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabWeather"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:contentDescription="Weather Advisory"
+            android:src="@drawable/ic_weather"
+            app:backgroundTint="@color/surface_white"
+            app:elevation="4dp"
+            app:fabCustomSize="46dp"
+            app:tint="@color/accent_teal" />
 
         <!-- Emergency Directory SOS FAB -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton

@@ -30,16 +30,20 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.hasan.chittago.data.cache.TileCacheManager
 import com.hasan.chittago.data.model.PlacePOI
 import com.hasan.chittago.data.model.RouteResult
+import com.hasan.chittago.data.model.WeatherInfo
 import com.hasan.chittago.data.network.OsrmRouteService
 import com.hasan.chittago.data.network.PhotonSearchService
+import com.hasan.chittago.data.network.WeatherService
 import com.hasan.chittago.data.repository.PoiRepository
 import com.hasan.chittago.databinding.ActivityMainBinding
 import com.hasan.chittago.ui.adapter.SearchSuggestionAdapter
 import com.hasan.chittago.ui.dialog.DistrictSelectorDialog
 import com.hasan.chittago.ui.dialog.EmergencyDirectoryDialog
 import com.hasan.chittago.ui.dialog.RouteStepsDialog
+import com.hasan.chittago.ui.dialog.WeatherAdvisoryDialog
 import com.hasan.chittago.ui.view.MapViewBridge
 import com.hasan.chittago.util.GeoUtils
+import java.util.Locale
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -53,6 +57,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
     private lateinit var tileCacheManager: TileCacheManager
     private val osrmRouteService = OsrmRouteService()
     private val photonSearchService = PhotonSearchService()
+    private val weatherService = WeatherService()
+    private var currentWeatherInfo: WeatherInfo? = null
+    private var currentDistrictName: String = "চট্টগ্রাম"
 
     private lateinit var searchAdapter: SearchSuggestionAdapter
     private var searchJob: Job? = null
@@ -66,7 +73,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
     private var selectedPoi: PlacePOI? = null
     private var currentTravelMode = "driving" // "driving", "bike", "walking"
     private var currentLayerIndex = 0
-    private val layerThemes = listOf("osm", "satellite", "dark")
+    private val layerThemes = listOf("osm", "satellite", "topo", "dark")
     private var currentRouteResult: RouteResult? = null
 
     // Hardware Sensors
@@ -155,6 +162,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
         if (hasRealGpsLocation) {
             updateJsUserLocation()
         }
+        loadWeather(currentUserLat, currentUserLng, currentDistrictName)
     }
 
     private fun renderPoisOnMap(pois: List<PlacePOI>) {
@@ -369,23 +377,30 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
             DistrictSelectorDialog { district ->
                 binding.mapWebView.evaluateJavascript("flyToLocation(${district.lat}, ${district.lng}, 13)", null)
                 Toast.makeText(this, "${district.nameBn} জেলায় যাচ্ছেন", Toast.LENGTH_SHORT).show()
+                currentDistrictName = district.nameBn
+                loadWeather(district.lat, district.lng, district.nameBn)
             }.show(supportFragmentManager, DistrictSelectorDialog.TAG)
         }
         binding.fabDistrictQuick.setOnClickListener { openDistrictSelector() }
         binding.btnDistrictFilter.setOnClickListener { openDistrictSelector() }
+
+        // Weather & Mountain Advisory
+        binding.fabWeather.setOnClickListener { showWeatherAdvisory() }
+        binding.chipWeather.setOnClickListener { showWeatherAdvisory() }
 
         // Emergency Helpline SOS Button
         binding.fabEmergency.setOnClickListener {
             EmergencyDirectoryDialog().show(supportFragmentManager, EmergencyDirectoryDialog.TAG)
         }
 
-        // Layer switcher (Standard OSM / Satellite / Night)
+        // Layer switcher (Standard OSM / Satellite / Topo Terrain / Night)
         binding.fabLayers.setOnClickListener {
             currentLayerIndex = (currentLayerIndex + 1) % layerThemes.size
             val nextTheme = layerThemes[currentLayerIndex]
             binding.mapWebView.evaluateJavascript("setTheme('$nextTheme')", null)
             val themeName = when (nextTheme) {
                 "satellite" -> "স্যাটেলাইট ভিউ (Satellite 🛰️)"
+                "topo" -> "পাহাড়ি ভূপ্রকৃতি ও উচ্চতা রেখা (Terrain 🏔️)"
                 "dark" -> "নাইট মোড (Dark 🌙)"
                 else -> "স্ট্রিট ম্যাপ (OpenStreetMap 🗺️)"
             }
@@ -423,6 +438,27 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
             currentRouteResult = null
             binding.cardRouteInfo.visibility = View.GONE
             binding.mapWebView.evaluateJavascript("clearRoute()", null)
+        }
+    }
+
+    private fun showWeatherAdvisory() {
+        val weather = currentWeatherInfo
+        if (weather != null) {
+            WeatherAdvisoryDialog(weather).show(supportFragmentManager, WeatherAdvisoryDialog.TAG)
+        } else {
+            Toast.makeText(this, "আবহাওয়া তথ্য লোড হচ্ছে...", Toast.LENGTH_SHORT).show()
+            loadWeather(currentUserLat, currentUserLng, currentDistrictName)
+        }
+    }
+
+    private fun loadWeather(lat: Double, lng: Double, district: String) {
+        lifecycleScope.launch {
+            val weather = weatherService.getDistrictWeather(lat, lng, district)
+            if (weather != null) {
+                currentWeatherInfo = weather
+                val chipText = "🌦️ ${String.format(Locale.US, "%.0f°C", weather.temperatureC)} | ${district.take(6)}"
+                binding.chipWeather.text = chipText
+            }
         }
     }
 

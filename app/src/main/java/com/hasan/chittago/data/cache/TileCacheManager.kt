@@ -33,6 +33,7 @@ class TileCacheManager(context: Context) {
         val path = uri.path ?: return false
         val isAllowedHost = host.contains("openstreetmap.org") ||
                 host.contains("openstreetmap.fr") ||
+                host.contains("opentopomap.org") ||
                 host.contains("arcgisonline.com")
         if (!isAllowedHost) return false
 

@@ -24,6 +24,21 @@
       display: none !important;
     }
 
+    /* Modern Metric Scale Bar */
+    .leaflet-control-scale-line {
+      background: rgba(255, 255, 255, 0.9) !important;
+      border: 1px solid #64748b !important;
+      border-top: none !important;
+      color: #0f172a !important;
+      font-weight: bold !important;
+      font-size: 11px !important;
+      border-radius: 0 0 4px 4px !important;
+      padding: 1px 6px !important;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18) !important;
+      margin-bottom: 28px !important;
+      margin-left: 14px !important;
+    }
+
     /* Modern Dark Theme CSS Filter for Zero-API-Key Dark Map */
     .dark-map-tiles {
       filter: invert(100%) hue-rotate(180deg) brightness(88%) contrast(92%);
@@ -148,6 +163,9 @@
       bounceAtZoomLimits: true
     });
 
+    // Metric Scale Bar (Bottom Left)
+    L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
+
     // Tile Providers with High-DPI Retina Detection (Ultra-Sharp 2x Resolution)
     const tileLayers = {
       osm: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -159,6 +177,12 @@
       satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: '&copy; Esri &copy; Maxar',
         maxNativeZoom: 19,
+        maxZoom: 19,
+        detectRetina: true
+      }),
+      topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenTopoMap contributors',
+        maxNativeZoom: 17,
         maxZoom: 19,
         detectRetina: true
       }),
@@ -191,6 +215,9 @@
       } else if (theme === 'satellite') {
         currentLayer = tileLayers.satellite.addTo(map);
         if (mapEl) mapEl.style.background = '#020617';
+      } else if (theme === 'topo') {
+        currentLayer = tileLayers.topo.addTo(map);
+        if (mapEl) mapEl.style.background = '#e2e8f0';
       } else {
         currentLayer = tileLayers.osm.addTo(map);
         if (mapEl) mapEl.style.background = '#f8fafc';
