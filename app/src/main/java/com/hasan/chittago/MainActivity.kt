@@ -39,6 +39,7 @@ import com.hasan.chittago.databinding.ActivityMainBinding
 import com.hasan.chittago.ui.adapter.SearchSuggestionAdapter
 import com.hasan.chittago.ui.dialog.DistrictSelectorDialog
 import com.hasan.chittago.ui.dialog.EmergencyDirectoryDialog
+import com.hasan.chittago.ui.dialog.MapLayersDialog
 import com.hasan.chittago.ui.dialog.RouteStepsDialog
 import com.hasan.chittago.ui.dialog.WeatherAdvisoryDialog
 import com.hasan.chittago.ui.view.MapViewBridge
@@ -72,8 +73,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
 
     private var selectedPoi: PlacePOI? = null
     private var currentTravelMode = "driving" // "driving", "bike", "walking"
-    private var currentLayerIndex = 0
-    private val layerThemes = listOf("osm", "satellite", "topo", "dark")
+    private var currentLayerType = "osm" // "osm", "hybrid", "topo", "cycle", "dark", "satellite"
+    private var isRadarActive = false
+    private var isPoiMarkersActive = true
+    private var isScaleBarActive = true
     private var currentRouteResult: RouteResult? = null
 
     // Hardware Sensors
@@ -393,18 +396,41 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
             EmergencyDirectoryDialog().show(supportFragmentManager, EmergencyDirectoryDialog.TAG)
         }
 
-        // Layer switcher (Standard OSM / Satellite / Topo Terrain / Night)
+        // Visual Layer Selector (Google / Apple Maps surpassing bottom sheet)
         binding.fabLayers.setOnClickListener {
-            currentLayerIndex = (currentLayerIndex + 1) % layerThemes.size
-            val nextTheme = layerThemes[currentLayerIndex]
-            binding.mapWebView.evaluateJavascript("setTheme('$nextTheme')", null)
-            val themeName = when (nextTheme) {
-                "satellite" -> "স্যাটেলাইট ভিউ (Satellite 🛰️)"
-                "topo" -> "পাহাড়ি ভূপ্রকৃতি ও উচ্চতা রেখা (Terrain 🏔️)"
-                "dark" -> "নাইট মোড (Dark 🌙)"
-                else -> "স্ট্রিট ম্যাপ (OpenStreetMap 🗺️)"
-            }
-            Toast.makeText(this, themeName, Toast.LENGTH_SHORT).show()
+            MapLayersDialog(
+                selectedLayer = currentLayerType,
+                isRadarActive = isRadarActive,
+                isPoiActive = isPoiMarkersActive,
+                isScaleActive = isScaleBarActive,
+                onLayerSelected = { selectedType ->
+                    currentLayerType = selectedType
+                    binding.mapWebView.evaluateJavascript("setLayer('$selectedType')", null)
+                    val layerName = when (selectedType) {
+                        "hybrid" -> "হাইব্রিড স্যাটেলাইট ও রোড ভিউ (Hybrid 🛰️)"
+                        "satellite" -> "স্যাটেলাইট ভিউ (Satellite 🛰️)"
+                        "topo" -> "পাহাড়ি ভূপ্রকৃতি ও উচ্চতা রেখা (Terrain 🏔️)"
+                        "cycle" -> "বাইকিং ও ট্র্যাকিং ট্রেইল (Cycling 🚴)"
+                        "dark" -> "নাইট মোড (OLED Dark 🌙)"
+                        else -> "স্ট্রিট ম্যাপ (Standard OpenStreetMap 🗺️)"
+                    }
+                    Toast.makeText(this, layerName, Toast.LENGTH_SHORT).show()
+                },
+                onRadarToggled = { enabled ->
+                    isRadarActive = enabled
+                    binding.mapWebView.evaluateJavascript("toggleLiveRadar($enabled)", null)
+                    val msg = if (enabled) "লাইভ বৃষ্টিপাত ও মেঘের রাডার চালু হয়েছে" else "লাইভ রাডার বন্ধ করা হয়েছে"
+                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                },
+                onPoiToggled = { enabled ->
+                    isPoiMarkersActive = enabled
+                    binding.mapWebView.evaluateJavascript("togglePoiVisibility($enabled)", null)
+                },
+                onScaleToggled = { enabled ->
+                    isScaleBarActive = enabled
+                    binding.mapWebView.evaluateJavascript("toggleScaleBar($enabled)", null)
+                }
+            ).show(supportFragmentManager, MapLayersDialog.TAG)
         }
 
         // My Location

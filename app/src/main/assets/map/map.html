@@ -164,10 +164,10 @@
     });
 
     // Metric Scale Bar (Bottom Left)
-    L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
+    const scaleControl = L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
 
-    // Tile Providers with High-DPI Retina Detection (Ultra-Sharp 2x Resolution)
-    const tileLayers = {
+    // Advanced Multi-Layer Engine (100% Free Open-Source, Zero Watermarks)
+    const baseLayers = {
       osm: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxNativeZoom: 19,
@@ -186,6 +186,12 @@
         maxZoom: 19,
         detectRetina: true
       }),
+      cycle: L.tileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', {
+        attribution: '&copy; CyclOSM &copy; OpenStreetMap',
+        maxNativeZoom: 18,
+        maxZoom: 19,
+        detectRetina: true
+      }),
       dark: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         className: 'dark-map-tiles',
         attribution: '&copy; OpenStreetMap contributors',
@@ -195,7 +201,21 @@
       })
     };
 
-    let currentLayer = tileLayers.osm.addTo(map);
+    // Hybrid Overlays (Roads & Place Names over Satellite)
+    const hybridRoads = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 19,
+      maxZoom: 19,
+      detectRetina: true
+    });
+    const hybridLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 19,
+      maxZoom: 19,
+      detectRetina: true
+    });
+
+    let currentBaseLayer = baseLayers.osm.addTo(map);
+    let isHybridActive = false;
+    let radarLayer = null;
 
     // Layer Groups
     const poiLayerGroup = L.layerGroup().addTo(map);
@@ -205,22 +225,87 @@
     let userMarker = null;
     let userAccuracyCircle = null;
 
-    // Switch Theme
-    function setTheme(theme) {
-      map.removeLayer(currentLayer);
+    // Switch Layer & Hybrid Setup
+    function setLayer(type) {
+      map.removeLayer(currentBaseLayer);
+      if (isHybridActive) {
+        map.removeLayer(hybridRoads);
+        map.removeLayer(hybridLabels);
+        isHybridActive = false;
+      }
+
       const mapEl = document.getElementById('map');
-      if (theme === 'dark') {
-        currentLayer = tileLayers.dark.addTo(map);
-        if (mapEl) mapEl.style.background = '#0f172a';
-      } else if (theme === 'satellite') {
-        currentLayer = tileLayers.satellite.addTo(map);
+      if (type === 'hybrid') {
+        currentBaseLayer = baseLayers.satellite.addTo(map);
+        hybridRoads.addTo(map);
+        hybridLabels.addTo(map);
+        isHybridActive = true;
         if (mapEl) mapEl.style.background = '#020617';
-      } else if (theme === 'topo') {
-        currentLayer = tileLayers.topo.addTo(map);
+      } else if (type === 'satellite') {
+        currentBaseLayer = baseLayers.satellite.addTo(map);
+        if (mapEl) mapEl.style.background = '#020617';
+      } else if (type === 'topo') {
+        currentBaseLayer = baseLayers.topo.addTo(map);
         if (mapEl) mapEl.style.background = '#e2e8f0';
+      } else if (type === 'cycle') {
+        currentBaseLayer = baseLayers.cycle.addTo(map);
+        if (mapEl) mapEl.style.background = '#f1f5f9';
+      } else if (type === 'dark') {
+        currentBaseLayer = baseLayers.dark.addTo(map);
+        if (mapEl) mapEl.style.background = '#0f172a';
       } else {
-        currentLayer = tileLayers.osm.addTo(map);
+        currentBaseLayer = baseLayers.osm.addTo(map);
         if (mapEl) mapEl.style.background = '#f8fafc';
+      }
+    }
+
+    function setTheme(theme) {
+      setLayer(theme);
+    }
+
+    // Toggle Live Doppler Weather Rain Radar
+    async function toggleLiveRadar(enable) {
+      if (!enable) {
+        if (radarLayer) {
+          map.removeLayer(radarLayer);
+          radarLayer = null;
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+        const data = await res.json();
+        if (data && data.radar && data.radar.past && data.radar.past.length > 0) {
+          const latestFrame = data.radar.past[data.radar.past.length - 1];
+          const radarPath = latestFrame.path;
+          if (radarLayer) map.removeLayer(radarLayer);
+          radarLayer = L.tileLayer(`https://tilecache.rainviewer.com${radarPath}/256/{z}/{x}/{y}/2/1_1.png`, {
+            opacity: 0.65,
+            zIndex: 100,
+            maxZoom: 19
+          }).addTo(map);
+        }
+      } catch (e) {
+        console.error("RainViewer load error:", e);
+      }
+    }
+
+    // Toggle Metric Scale Bar
+    function toggleScaleBar(enable) {
+      if (enable && !scaleControl._map) {
+        scaleControl.addTo(map);
+      } else if (!enable && scaleControl._map) {
+        map.removeControl(scaleControl);
+      }
+    }
+
+    // Toggle POI Markers Visibility
+    function togglePoiVisibility(enable) {
+      if (enable && !map.hasLayer(poiLayerGroup)) {
+        map.addLayer(poiLayerGroup);
+      } else if (!enable && map.hasLayer(poiLayerGroup)) {
+        map.removeLayer(poiLayerGroup);
       }
     }
 

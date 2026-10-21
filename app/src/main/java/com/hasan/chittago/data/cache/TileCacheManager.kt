@@ -34,10 +34,12 @@ class TileCacheManager(context: Context) {
         val isAllowedHost = host.contains("openstreetmap.org") ||
                 host.contains("openstreetmap.fr") ||
                 host.contains("opentopomap.org") ||
-                host.contains("arcgisonline.com")
+                host.contains("arcgisonline.com") ||
+                host.contains("rainviewer.com")
         if (!isAllowedHost) return false
 
         return path.contains("/tile/") ||
+                path.contains("/radar/") ||
                 path.endsWith(".png") ||
                 path.endsWith(".jpg") ||
                 path.endsWith(".jpeg") ||
