@@ -1,7 +1,10 @@
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
-        maven { url = uri('/root/maven/localMvnRepository') }
+        def localMvn = new File('/root/maven/localMvnRepository')
+        if (localMvn.exists()) {
+            maven { url = uri(localMvn) }
+        }
         google()
         mavenCentral()
     }
