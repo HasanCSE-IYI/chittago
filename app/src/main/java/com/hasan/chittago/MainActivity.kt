@@ -102,8 +102,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener, LocationListener 
             settings.domStorageEnabled = true
             settings.allowFileAccess = true
             settings.allowContentAccess = true
-            settings.loadWithOverviewMode = true
-            settings.useWideViewPort = true
+            settings.loadWithOverviewMode = false
+            settings.useWideViewPort = false
+            settings.textZoom = 100
+            setLayerType(View.LAYER_TYPE_HARDWARE, null)
 
             val bridge = MapViewBridge(
                 onMarkerClickCallback = { id, _, lat, lng, _, _ ->

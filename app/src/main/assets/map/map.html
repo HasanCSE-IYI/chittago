@@ -29,6 +29,13 @@
       filter: invert(100%) hue-rotate(180deg) brightness(88%) contrast(92%);
     }
 
+    /* Retina & Crisp Subpixel Image Optimization */
+    .leaflet-tile {
+      image-rendering: -webkit-optimize-contrast;
+      -webkit-backface-visibility: hidden;
+      transform: translate3d(0, 0, 0);
+    }
+
     /* User Pulse Location Marker */
     .user-location-marker {
       position: relative;
@@ -129,32 +136,38 @@
     // Initial Center: Chattogram Metro (GEC / Agrabad)
     const initialCenter = [22.3569, 91.8286];
 
-    // Initialize Map with constraints
+    // Initialize Map with constraints & crisp rendering
     const map = L.map('map', {
       center: initialCenter,
       zoom: 12,
       minZoom: 8,
-      maxZoom: 18,
+      maxZoom: 19,
       maxBounds: ctgBounds,
       maxBoundsViscosity: 1.0,
       zoomControl: false,
       bounceAtZoomLimits: true
     });
 
-    // Tile Providers (100% Free Open-Source, Zero Watermarks, No API Key Required)
+    // Tile Providers with High-DPI Retina Detection (Ultra-Sharp 2x Resolution)
     const tileLayers = {
       osm: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 19
+        maxNativeZoom: 19,
+        maxZoom: 19,
+        detectRetina: true
       }),
       satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: '&copy; Esri &copy; Maxar',
-        maxZoom: 19
+        maxNativeZoom: 19,
+        maxZoom: 19,
+        detectRetina: true
       }),
       dark: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         className: 'dark-map-tiles',
         attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 19
+        maxNativeZoom: 19,
+        maxZoom: 19,
+        detectRetina: true
       })
     };
 
