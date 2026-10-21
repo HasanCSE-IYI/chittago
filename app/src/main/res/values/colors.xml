@@ -1,0 +1,17 @@
+<resources>
+    <color name="primary">#0F172A</color>
+    <color name="primary_dark">#020617</color>
+    <color name="accent_teal">#0EA5E9</color>
+    <color name="accent_teal_light">#E0F2FE</color>
+    <color name="emerald">#10B981</color>
+    <color name="emerald_light">#D1FAE5</color>
+    <color name="coral">#F43F5E</color>
+    <color name="surface_white">#FFFFFF</color>
+    <color name="surface_card">#F8FAFC</color>
+    <color name="surface_border">#E2E8F0</color>
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#64748B</color>
+    <color name="text_muted">#94A3B8</color>
+    <color name="glass_bg">#F2FFFFFF</color>
+    <color name="transparent">#00000000</color>
+</resources>

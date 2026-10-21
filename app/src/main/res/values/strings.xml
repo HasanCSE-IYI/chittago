@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Chittago</string>
+    <string name="search_hint">চট্টগ্রামের যেকোনো জায়গা খুঁজুন...</string>
+    <string name="district_title">চট্টগ্রাম বিভাগ (১১ জেলা)</string>
+    <string name="category_tourism">🏖️ পর্যটন</string>
+    <string name="category_hospital">🏥 হাসপাতাল</string>
+    <string name="category_mezban">🍲 মেজবানি</string>
+    <string name="category_transport">🚌 স্টেশন</string>
+    <string name="category_emergency">🚨 জরুরি সেবা</string>
+    <string name="btn_directions">রুট ও নেভিগেশন</string>
+    <string name="btn_call">জরুরি কল</string>
+    <string name="btn_share">লোকেশন শেয়ার</string>
+    <string name="distance_label">দূরত্ব:</string>
+    <string name="duration_label">সময়:</string>
+    <string name="route_mode_driving">🚗 গাড়ি</string>
+    <string name="route_mode_bike">🏍️ বাইক</string>
+    <string name="route_mode_walking">🚶 হাঁটা</string>
+    <string name="offline_badge">অফলাইন রেডি</string>
+</resources>

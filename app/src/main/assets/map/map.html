@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Chittago Map Engine</title>
+  <link rel="stylesheet" href="leaflet.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    html, body, #map {
+      width: 100%;
+      height: 100%;
+      background: #0f172a;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", sans-serif;
+    }
+    .leaflet-control-zoom, .leaflet-control-attribution {
+      display: none !important;
+    }
+
+    /* User Pulse Location Marker */
+    .user-location-marker {
+      position: relative;
+      width: 24px;
+      height: 24px;
+    }
+    .user-pulse {
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(14, 165, 233, 0.35);
+      animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    .user-dot {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0ea5e9;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    .user-heading {
+      position: absolute;
+      top: -8px;
+      left: 6px;
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 10px solid #0ea5e9;
+      transform-origin: bottom center;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.6); opacity: 0.9; }
+      80%, 100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    /* Custom POI Marker */
+    .custom-poi-marker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+    }
+    .custom-poi-marker:active {
+      transform: scale(0.88);
+    }
+    .poi-tourism { background: #0ea5e9; }
+    .poi-hospital { background: #ef4444; }
+    .poi-mezban { background: #f59e0b; }
+    .poi-transport { background: #8b5cf6; }
+    .poi-emergency { background: #10b981; }
+    .custom-poi-marker span {
+      font-size: 17px;
+      line-height: 1;
+    }
+
+    /* Pin Start & Finish */
+    .route-pin {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: bold;
+      font-size: 13px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    }
+    .route-start { background: #10b981; }
+    .route-end { background: #f43f5e; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="leaflet.js"></script>
+  <script>
+    // Chattogram Division Bounding Box
+    const ctgSouthWest = L.latLng(20.50, 90.40);
+    const ctgNorthEast = L.latLng(24.50, 92.90);
+    const ctgBounds = L.latLngBounds(ctgSouthWest, ctgNorthEast);
+
+    // Initial Center: Chattogram Metro (GEC / Agrabad)
+    const initialCenter = [22.3569, 91.8286];
+
+    // Initialize Map with constraints
+    const map = L.map('map', {
+      center: initialCenter,
+      zoom: 12,
+      minZoom: 8,
+      maxZoom: 18,
+      maxBounds: ctgBounds,
+      maxBoundsViscosity: 1.0,
+      zoomControl: false,
+      bounceAtZoomLimits: true
+    });
+
+    // Tile Providers (100% Free)
+    const tileLayers = {
+      light: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }),
+      dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }),
+      osm: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+      })
+    };
+
+    let currentLayer = tileLayers.light.addTo(map);
+
+    // Layer Groups
+    const poiLayerGroup = L.layerGroup().addTo(map);
+    let routePolyline = null;
+    let routeStartMarker = null;
+    let routeEndMarker = null;
+    let userMarker = null;
+    let userAccuracyCircle = null;
+
+    // Switch Theme
+    function setTheme(theme) {
+      map.removeLayer(currentLayer);
+      if (theme === 'dark') {
+        currentLayer = tileLayers.dark.addTo(map);
+      } else if (theme === 'osm') {
+        currentLayer = tileLayers.osm.addTo(map);
+      } else {
+        currentLayer = tileLayers.light.addTo(map);
+      }
+    }
+
+    // Fly camera
+    function flyToLocation(lat, lng, zoom) {
+      map.flyTo([lat, lng], zoom || 15, {
+        animate: true,
+        duration: 1.2,
+        easeLinearity: 0.25
+      });
+    }
+
+    // Update Live User GPS
+    function updateUserLocation(lat, lng, heading, accuracy) {
+      const pos = [lat, lng];
+      const headingDeg = heading || 0;
+
+      if (!userMarker) {
+        const userIcon = L.divIcon({
+          className: '',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+          html: `
+            <div class="user-location-marker">
+              <div class="user-pulse"></div>
+              <div id="userHeading" class="user-heading" style="transform: rotate(${headingDeg}deg);"></div>
+              <div class="user-dot"></div>
+            </div>`
+        });
+        userMarker = L.marker(pos, { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
+      } else {
+        userMarker.setLatLng(pos);
+        const headingEl = document.getElementById('userHeading');
+        if (headingEl) {
+          headingEl.style.transform = `rotate(${headingDeg}deg)`;
+        }
+      }
+
+      if (accuracy && accuracy > 0) {
+        if (!userAccuracyCircle) {
+          userAccuracyCircle = L.circle(pos, {
+            radius: accuracy,
+            color: '#0ea5e9',
+            fillColor: '#0ea5e9',
+            fillOpacity: 0.12,
+            weight: 1
+          }).addTo(map);
+        } else {
+          userAccuracyCircle.setLatLng(pos);
+          userAccuracyCircle.setRadius(accuracy);
+        }
+      }
+    }
+
+    // Render POI list on map
+    function renderPois(poisJsonString) {
+      poiLayerGroup.clearLayers();
+      try {
+        const pois = JSON.parse(poisJsonString);
+        pois.forEach(poi => {
+          let categoryClass = 'poi-tourism';
+          let emoji = '📍';
+          if (poi.category === 'hospital') { categoryClass = 'poi-hospital'; emoji = '🏥'; }
+          else if (poi.category === 'mezban') { categoryClass = 'poi-mezban'; emoji = '🍲'; }
+          else if (poi.category === 'transport') { categoryClass = 'poi-transport'; emoji = '🚌'; }
+          else if (poi.category === 'emergency') { categoryClass = 'poi-emergency'; emoji = '🚨'; }
+          else if (poi.category === 'tourism') { categoryClass = 'poi-tourism'; emoji = '🏖️'; }
+
+          const icon = L.divIcon({
+            className: '',
+            iconSize: [36, 36],
+            iconAnchor: [18, 18],
+            html: `<div class="custom-poi-marker ${categoryClass}"><span>${emoji}</span></div>`
+          });
+
+          const marker = L.marker([poi.lat, poi.lng], { icon: icon });
+          marker.on('click', () => {
+            if (window.AndroidBridge && window.AndroidBridge.onMarkerClicked) {
+              window.AndroidBridge.onMarkerClicked(
+                poi.id,
+                poi.nameBn || poi.name,
+                poi.lat,
+                poi.lng,
+                poi.category,
+                poi.district
+              );
+            }
+          });
+          poiLayerGroup.addLayer(marker);
+        });
+      } catch (e) {
+        console.error("Error rendering POIs", e);
+      }
+    }
+
+    // Draw route polyline from GeoJSON coordinates
+    function drawRoute(geojsonCoordsJson, modeColor) {
+      clearRoute();
+      try {
+        const coords = JSON.parse(geojsonCoordsJson); // [[lng, lat], ...]
+        const latLngs = coords.map(c => [c[1], c[0]]);
+
+        const startPt = latLngs[0];
+        const endPt = latLngs[latLngs.length - 1];
+
+        const startIcon = L.divIcon({
+          className: '',
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+          html: `<div class="route-pin route-start">A</div>`
+        });
+        const endIcon = L.divIcon({
+          className: '',
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+          html: `<div class="route-pin route-end">B</div>`
+        });
+
+        routeStartMarker = L.marker(startPt, { icon: startIcon, zIndexOffset: 900 }).addTo(map);
+        routeEndMarker = L.marker(endPt, { icon: endIcon, zIndexOffset: 900 }).addTo(map);
+
+        routePolyline = L.polyline(latLngs, {
+          color: modeColor || '#0ea5e9',
+          weight: 6,
+          opacity: 0.9,
+          lineJoin: 'round',
+          lineCap: 'round'
+        }).addTo(map);
+
+        map.fitBounds(routePolyline.getBounds(), {
+          padding: [60, 60],
+          animate: true
+        });
+      } catch (e) {
+        console.error("Error drawing route", e);
+      }
+    }
+
+    function clearRoute() {
+      if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
+      if (routeStartMarker) { map.removeLayer(routeStartMarker); routeStartMarker = null; }
+      if (routeEndMarker) { map.removeLayer(routeEndMarker); routeEndMarker = null; }
+    }
+
+    // Notify Android when map is moved
+    map.on('moveend', () => {
+      const center = map.getCenter();
+      if (window.AndroidBridge && window.AndroidBridge.onMapMoved) {
+        window.AndroidBridge.onMapMoved(center.lat, center.lng, map.getZoom());
+      }
+    });
+
+    // Notify Android when page is ready
+    window.addEventListener('load', () => {
+      if (window.AndroidBridge && window.AndroidBridge.onMapReady) {
+        window.AndroidBridge.onMapReady();
+      }
+    });
+  </script>
+</body>
+</html>
